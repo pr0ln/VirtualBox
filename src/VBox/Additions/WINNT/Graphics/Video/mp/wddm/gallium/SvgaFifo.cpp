@@ -461,6 +461,12 @@ static NTSTATUS svgaCBAlloc(PVMSVGACBSTATE pCBState, VMSVGACBTYPE enmType, uint3
     return STATUS_SUCCESS;
 }
 
+DECLINLINE(void) svgaCBSubmitHeaderLocked(PVBOXWDDM_EXT_VMSVGA pSvga, PHYSICAL_ADDRESS CBHeaderPhysAddr, SVGACBContext CBContext)
+{
+    SVGARegWrite(pSvga, SVGA_REG_COMMAND_HIGH, CBHeaderPhysAddr.HighPart);
+    SVGARegWrite(pSvga, SVGA_REG_COMMAND_LOW, CBHeaderPhysAddr.LowPart | CBContext);
+}
+
 static void svgaCBSubmitHeader(PVBOXWDDM_EXT_VMSVGA pSvga, PHYSICAL_ADDRESS CBHeaderPhysAddr, SVGACBContext CBContext)
 {
     PVMSVGACBSTATE pCBState = pSvga->pCBState;
@@ -468,8 +474,7 @@ static void svgaCBSubmitHeader(PVBOXWDDM_EXT_VMSVGA pSvga, PHYSICAL_ADDRESS CBHe
     KIRQL OldIrql;
     KeAcquireSpinLock(&pCBState->SpinLock, &OldIrql);
 
-    SVGARegWrite(pSvga, SVGA_REG_COMMAND_HIGH, CBHeaderPhysAddr.HighPart);
-    SVGARegWrite(pSvga, SVGA_REG_COMMAND_LOW, CBHeaderPhysAddr.LowPart | CBContext);
+    svgaCBSubmitHeaderLocked(pSvga, CBHeaderPhysAddr, CBContext);
 
     KeReleaseSpinLock(&pCBState->SpinLock, OldIrql);
 }
@@ -819,7 +824,7 @@ void SvgaCmdBufProcess(PVBOXWDDM_EXT_VMSVGA pSvga)
 
             RTListAppend(&pCBCtx->QueueSubmitted, &pCB->nodeQueue);
             ++pCBCtx->cSubmitted;
-            svgaCBSubmitHeader(pSvga, pCB->CBHeaderPhysAddr, (SVGACBContext)i);
+            svgaCBSubmitHeaderLocked(pSvga, pCB->CBHeaderPhysAddr, (SVGACBContext)i);
             GALOG(("Submitted pending %p\n", pCB));
         }
     }
@@ -861,6 +866,29 @@ void SvgaCmdBufProcess(PVBOXWDDM_EXT_VMSVGA pSvga)
                 break;
         }
     }
+}
+
+
+bool SvgaCmdBufIsIdle(PVBOXWDDM_EXT_VMSVGA pSvga)
+{
+    PVMSVGACBSTATE pCBState = pSvga->pCBState;
+
+    bool fIdle = true;
+
+    KIRQL OldIrql;
+    KeAcquireSpinLock(&pCBState->SpinLock, &OldIrql);
+    for (unsigned i = 0; i < RT_ELEMENTS(pCBState->aCBContexts); ++i)
+    {
+        PVMSVGACBCONTEXT pCBCtx = &pCBState->aCBContexts[i];
+        if (pCBCtx->cSubmitted > 0)
+        {
+            fIdle = false;
+            break;
+        }
+    }
+    KeReleaseSpinLock(&pCBState->SpinLock, OldIrql);
+
+    return fIdle;
 }
 
 

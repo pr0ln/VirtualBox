@@ -248,22 +248,16 @@ NTSTATUS GaContextDestroy(PVBOXWDDM_EXT_GA pGaDevExt,
                     SvgaCmdBufCommit(pSvga, sizeof(*pCmd));
                 }
 
-                pvCmd = SvgaCmdBuf3dCmdReserve(pSvga, SVGA_3D_CMD_DESTROY_GB_MOB, sizeof(SVGA3dCmdDestroyGBMob), SVGA3D_INVALID_ID);
+                uint32_t cbRequired = 0;
+                SvgaMobDestroy(pSvga, pCOT->pMob, NULL, 0, &cbRequired);
+                pvCmd = SvgaCmdBufReserve(pSvga, cbRequired, SVGA3D_INVALID_ID);
                 if (pvCmd)
                 {
-                    SVGA3dCmdDestroyGBMob *pCmd = (SVGA3dCmdDestroyGBMob *)pvCmd;
-                    pCmd->mobid = VMSVGAMOB_ID(pCOT->pMob);
-                    SvgaCmdBufCommit(pSvga, sizeof(*pCmd));
+                    SvgaMobDestroy(pSvga, pCOT->pMob, pvCmd, cbRequired, &cbRequired);
+                    SvgaCmdBufCommit(pSvga, cbRequired);
                 }
 
-                SvgaMobFree(pSvga, pCOT->pMob);
                 pCOT->pMob = NULL;
-            }
-
-            if (pCOT->hMemObj != NIL_RTR0MEMOBJ)
-            {
-                RTR0MemObjFree(pCOT->hMemObj, true);
-                pCOT->hMemObj = NIL_RTR0MEMOBJ;
             }
         }
 
@@ -390,6 +384,24 @@ static int gaFenceCmp(uint32_t u32FenceA, uint32_t u32FenceB)
          return -1; /* FenceA is newer than FenceB. */
      }
      else if (u32FenceA == u32FenceB)
+     {
+         /* FenceA is equal to FenceB. */
+         return 0;
+     }
+
+     /* FenceA is older than FenceB. */
+     return 1;
+}
+
+
+static int gaFenceCmp64(uint64_t u64FenceA, uint64_t u64FenceB)
+{
+     if (   u64FenceA < u64FenceB
+         || u64FenceA - u64FenceB > UINT64_MAX / 2)
+     {
+         return -1; /* FenceA is newer than FenceB. */
+     }
+     else if (u64FenceA == u64FenceB)
      {
          /* FenceA is equal to FenceB. */
          return 0;
@@ -1536,6 +1548,46 @@ BOOLEAN GaDxgkDdiInterruptRoutine(const PVOID MiniportDeviceContext,
     return TRUE;
 }
 
+
+static void dxDeferredMobDestruction(PVOID IoObject, PVOID Context, PIO_WORKITEM IoWorkItem)
+{
+    RT_NOREF(IoObject);
+    IoFreeWorkItem(IoWorkItem);
+
+    PVBOXWDDM_EXT_VMSVGA pSvga = (PVBOXWDDM_EXT_VMSVGA)Context;
+    if (pSvga->pMiniportMobData)
+    {
+        uint64_t const u64MobFence = ASMAtomicReadU64(&pSvga->pMiniportMobData->u64MobFence);
+
+        /* Move mobs which were deleted by the host to the local list under the lock. */
+        RTLISTANCHOR listDestroyedMobs;
+        RTListInit(&listDestroyedMobs);
+
+        KIRQL OldIrql;
+        SvgaHostObjectsLock(pSvga, &OldIrql);
+
+        PVMSVGAMOB pIter, pNext;
+        RTListForEachSafe(&pSvga->listMobDeferredDestruction, pIter, pNext, VMSVGAMOB, node)
+        {
+            if (gaFenceCmp64(pIter->u64MobFence, u64MobFence) <= 0)
+            {
+                RTListNodeRemove(&pIter->node);
+                RTListAppend(&listDestroyedMobs, &pIter->node);
+            }
+        }
+
+        SvgaHostObjectsUnlock(pSvga, OldIrql);
+
+        RTListForEachSafe(&listDestroyedMobs, pIter, pNext, VMSVGAMOB, node)
+        {
+            /* Delete the data. SvgaMobFree deallocates pIter. */
+            RTListNodeRemove(&pIter->node);
+            SvgaMobFree(pSvga, pIter);
+        }
+    }
+}
+
+
 VOID GaDxgkDdiDpcRoutine(const PVOID MiniportDeviceContext)
 {
     PVBOXMP_DEVEXT pDevExt = (PVBOXMP_DEVEXT)MiniportDeviceContext;
@@ -1619,6 +1671,21 @@ VOID GaDxgkDdiDpcRoutine(const PVOID MiniportDeviceContext)
 
     if (ASMAtomicCmpXchgBool(&pSvga->fCommandBufferIrq, false, true) && pSvga->pCBState)
         SvgaCmdBufProcess(pSvga);
+
+    /*
+     * Deferred MOB destruction.
+     */
+    SvgaHostObjectsLock(pSvga, &OldIrql);
+    bool fMobs = !RTListIsEmpty(&pSvga->listMobDeferredDestruction);
+    SvgaHostObjectsUnlock(pSvga, OldIrql);
+
+    if (fMobs)
+    {
+        /* Deallocate memory in a worker thread at PASSIVE_LEVEL. */
+        PIO_WORKITEM pWorkItem = IoAllocateWorkItem(pDevExt->pPDO);
+        if (pWorkItem)
+            IoQueueWorkItemEx(pWorkItem, dxDeferredMobDestruction, DelayedWorkQueue, pSvga);
+    }
 }
 
 typedef struct GAPREEMPTCOMMANDCBCTX

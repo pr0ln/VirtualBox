@@ -100,26 +100,16 @@ static void svgaFreeGBMobForAllocation(VBOXWDDM_EXT_VMSVGA *pSvga, PVBOXWDDM_ALL
 {
     AssertReturnVoid(pAllocation->dx.SegmentId == 3 || pAllocation->dx.desc.fPrimary);
 
-    void *pvCmd = SvgaCmdBuf3dCmdReserve(pSvga, SVGA_3D_CMD_DESTROY_GB_MOB, sizeof(SVGA3dCmdDestroyGBMob), SVGA3D_INVALID_ID);
+    uint32_t cbRequired = 0;
+    SvgaMobDestroy(pSvga, pAllocation->dx.gb.pMob, NULL, 0, &cbRequired);
+    void *pvCmd = SvgaCmdBufReserve(pSvga, cbRequired, SVGA3D_INVALID_ID);
     if (pvCmd)
     {
-        SVGA3dCmdDestroyGBMob *pCmd = (SVGA3dCmdDestroyGBMob *)pvCmd;
-        pCmd->mobid = VMSVGAMOB_ID(pAllocation->dx.gb.pMob);
-        SvgaCmdBufCommit(pSvga, sizeof(SVGA3dCmdDestroyGBMob));
+        SvgaMobDestroy(pSvga, pAllocation->dx.gb.pMob, pvCmd, cbRequired, &cbRequired);
+        SvgaCmdBufCommit(pSvga, cbRequired);
     }
 
-    if (pAllocation->dx.gb.pMob)
-    {
-        SvgaMobFree(pSvga, pAllocation->dx.gb.pMob);
-        pAllocation->dx.gb.pMob = NULL;
-    }
-
-    if (pAllocation->dx.gb.hMemObjGB != NIL_RTR0MEMOBJ)
-    {
-        RTR0MemObjFree(pAllocation->dx.gb.hMemObjGB, true);
-        pAllocation->dx.gb.hMemObjGB = NIL_RTR0MEMOBJ;
-    }
-
+    pAllocation->dx.gb.pMob = NULL;
     pAllocation->dx.mobid = SVGA3D_INVALID_ID;
 }
 
@@ -131,7 +121,8 @@ static NTSTATUS svgaCreateGBMobForAllocation(VBOXWDDM_EXT_VMSVGA *pSvga, PVBOXWD
     uint32_t const cbGB = RT_ALIGN_32(pAllocation->dx.desc.cbAllocation, PAGE_SIZE);
 
     /* Allocate guest backing pages. */
-    int rc = RTR0MemObjAllocPageTag(&pAllocation->dx.gb.hMemObjGB, cbGB, false /* executable R0 mapping */, "VMSVGAGB");
+    RTR0MEMOBJ hMemObjGB;
+    int rc = RTR0MemObjAllocPageTag(&hMemObjGB, cbGB, false /* executable R0 mapping */, "VMSVGAGB");
     AssertRCReturn(rc, STATUS_INSUFFICIENT_RESOURCES);
 
     /* Allocate a new mob. */
@@ -139,7 +130,7 @@ static NTSTATUS svgaCreateGBMobForAllocation(VBOXWDDM_EXT_VMSVGA *pSvga, PVBOXWD
     Assert(NT_SUCCESS(Status));
     if (NT_SUCCESS(Status))
     {
-        Status = SvgaGboFillPageTableForMemObj(&pAllocation->dx.gb.pMob->gbo, pAllocation->dx.gb.hMemObjGB);
+        Status = SvgaMobSetMemObj(pAllocation->dx.gb.pMob, hMemObjGB);
         Assert(NT_SUCCESS(Status));
         if (NT_SUCCESS(Status))
         {
@@ -350,6 +341,7 @@ NTSTATUS APIENTRY DxgkDdiDXCreateAllocation(
     /* Init allocation data. */
     pAllocation->enmType = VBOXWDDM_ALLOC_TYPE_D3D;
     pAllocation->dx.desc = *(PVBOXDXALLOCATIONDESC)pAllocationInfo->pPrivateDriverData;
+    pAllocation->dx.desc.cbAllocation = pAllocation->dx.desc.cbAllocation;
     pAllocation->dx.sid = SVGA3D_INVALID_ID;
     pAllocation->dx.mobid = SVGA3D_INVALID_ID;
     pAllocation->dx.SegmentId = 0;
@@ -660,7 +652,10 @@ static NTSTATUS svgaPagingTransfer(PVBOXMP_DEVEXT pDevExt, DXGKARG_BUILDPAGINGBU
     PVBOXWDDM_ALLOCATION pAllocation = (PVBOXWDDM_ALLOCATION)pBuildPagingBuffer->Transfer.hAllocation;
     AssertReturn(pAllocation, STATUS_INVALID_PARAMETER);
 
-    SIZE_T cbAllocation = svgaGetAllocationSize(pAllocation);
+    /* "The size value is expanded to a multiple of the native host page size (for example, 4 KB on the x86 architecture)."
+     * I.e. TransferOffset and TransferSize are within the aligned size.
+     */
+    SIZE_T const cbAllocation = RT_ALIGN_32(svgaGetAllocationSize(pAllocation), PAGE_SIZE);
     AssertReturn(   pBuildPagingBuffer->Transfer.TransferOffset <= cbAllocation
                  && pBuildPagingBuffer->Transfer.TransferSize <= cbAllocation - pBuildPagingBuffer->Transfer.TransferOffset,
                  STATUS_INVALID_PARAMETER);
@@ -753,8 +748,8 @@ static NTSTATUS svgaPagingFill(PVBOXMP_DEVEXT pDevExt, DXGKARG_BUILDPAGINGBUFFER
             void *pvDst;
             if (pBuildPagingBuffer->Fill.Destination.SegmentId == 3 || pAllocation->dx.desc.fPrimary)
             {
-                AssertReturn(pAllocation->dx.gb.hMemObjGB != NIL_RTR0MEMOBJ, STATUS_INVALID_PARAMETER);
-                pvDst = RTR0MemObjAddress(pAllocation->dx.gb.hMemObjGB);
+                AssertReturn(pAllocation->dx.gb.pMob->hMemObj != NIL_RTR0MEMOBJ, STATUS_INVALID_PARAMETER);
+                pvDst = RTR0MemObjAddress(pAllocation->dx.gb.pMob->hMemObj);
             }
             else
             {
@@ -946,16 +941,13 @@ static NTSTATUS svgaPagingUnmapApertureSegment(PVBOXMP_DEVEXT pDevExt, DXGKARG_B
     PVMSVGAMOB pMob = SvgaMobQuery(pSvga, pAllocation->dx.mobid);
     AssertReturn(pMob, STATUS_INVALID_PARAMETER);
 
-    uint32_t cbRequired = sizeof(SVGA3dCmdHeader) + sizeof(SVGA3dCmdDestroyGBMob);
+    uint32_t cbRequired = 0;
+    SvgaMobDestroy(pSvga, pMob, NULL, 0, &cbRequired);
     if (pAllocation->dx.desc.enmAllocationType == VBOXDXALLOCATIONTYPE_SURFACE)
-    {
         cbRequired += sizeof(SVGA3dCmdHeader) + sizeof(SVGA3dCmdBindGBSurface);
-    }
 
     if (pBuildPagingBuffer->DmaSize < cbRequired)
-    {
         return STATUS_GRAPHICS_INSUFFICIENT_DMA_BUFFER;
-    }
 
     uint8_t *pu8Cmd = (uint8_t *)pBuildPagingBuffer->pDmaBuffer;
 
@@ -976,29 +968,24 @@ static NTSTATUS svgaPagingUnmapApertureSegment(PVBOXMP_DEVEXT pDevExt, DXGKARG_B
         }
     }
 
-    pHdr = (SVGA3dCmdHeader *)pu8Cmd;
-    pHdr->id   = SVGA_3D_CMD_DESTROY_GB_MOB;
-    pHdr->size = sizeof(SVGA3dCmdDestroyGBMob);
-    pu8Cmd += sizeof(*pHdr);
+    uint32_t cbCmd = 0;
+    NTSTATUS Status = SvgaMobDestroy(pSvga, pMob, pu8Cmd,
+                                     cbRequired - ((uintptr_t)pu8Cmd - (uintptr_t)pBuildPagingBuffer->pDmaBuffer),
+                                     &cbCmd);
+    AssertReturn(NT_SUCCESS(Status), Status);
+    pu8Cmd += cbCmd;
 
-    {
-    SVGA3dCmdDestroyGBMob *pCmd = (SVGA3dCmdDestroyGBMob *)pu8Cmd;
-    pCmd->mobid = pAllocation->dx.mobid;
-    pu8Cmd += sizeof(*pCmd);
-    }
-
-    *pcbCommands = (uintptr_t)pu8Cmd - (uintptr_t)pBuildPagingBuffer->pDmaBuffer;
-
-    SvgaMobFree(pSvga, pMob);
     pAllocation->dx.mobid = SVGA3D_INVALID_ID;
 
+    *pcbCommands = (uintptr_t)pu8Cmd - (uintptr_t)pBuildPagingBuffer->pDmaBuffer;
     return STATUS_SUCCESS;
 }
 
 
 NTSTATUS DxgkDdiDXBuildPagingBuffer(PVBOXMP_DEVEXT pDevExt, DXGKARG_BUILDPAGINGBUFFER *pBuildPagingBuffer)
 {
-    AssertReturn(pBuildPagingBuffer->DmaBufferPrivateDataSize >= sizeof(GARENDERDATA), STATUS_GRAPHICS_INSUFFICIENT_DMA_BUFFER);
+    if (pBuildPagingBuffer->DmaBufferPrivateDataSize < sizeof(GARENDERDATA))
+        return STATUS_GRAPHICS_INSUFFICIENT_DMA_BUFFER;
 
     NTSTATUS Status = STATUS_SUCCESS;
     uint32_t cbCommands = 0;

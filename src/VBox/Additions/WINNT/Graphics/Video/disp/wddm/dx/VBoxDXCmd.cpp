@@ -419,7 +419,6 @@ int vgpu10Draw(PVBOXDX_DEVICE pDevice,
     SET_CMD_FIELD(startVertexLocation);
 
     vboxDXCommandBufferCommit(pDevice);
-vboxDXDeviceFlushCommands(pDevice);
     return VINF_SUCCESS;
 }
 
@@ -439,7 +438,6 @@ int vgpu10DrawIndexed(PVBOXDX_DEVICE pDevice,
     SET_CMD_FIELD(baseVertexLocation);
 
     vboxDXCommandBufferCommit(pDevice);
-vboxDXDeviceFlushCommands(pDevice);
     return VINF_SUCCESS;
 }
 
@@ -1097,6 +1095,30 @@ int vgpu10UpdateSubResource(PVBOXDX_DEVICE pDevice,
     cmd->sid = SVGA3D_INVALID_ID;
     SET_CMD_FIELD(subResource);
     cmd->box = *pBox;
+    vboxDXStorePatchLocation(pDevice, &cmd->sid, VBOXDXALLOCATIONTYPE_SURFACE,
+                             hAllocation, 0, true);
+
+    vboxDXCommandBufferCommit(pDevice);
+    return VINF_SUCCESS;
+}
+
+
+int vgpu10ReadbackSubResource(PVBOXDX_DEVICE pDevice,
+                              D3DKMT_HANDLE hAllocation,
+                              uint32 subResource)
+{
+    void *pvCmd = vboxDXCommandBufferReserve(pDevice, SVGA_3D_CMD_DX_READBACK_SUBRESOURCE,
+                                             sizeof(SVGA3dCmdDXReadbackSubResource), 1);
+    if (!pvCmd)
+        return VERR_NO_MEMORY;
+
+    SVGA3dCmdDXReadbackSubResource *cmd = (SVGA3dCmdDXReadbackSubResource *)pvCmd;
+    cmd->sid = SVGA3D_INVALID_ID;
+    SET_CMD_FIELD(subResource);
+
+    /* fWriteOperation == true should make sure that DXGK waits until the command is completed
+     * before getting the allocation data in pfnLockCb.
+     */
     vboxDXStorePatchLocation(pDevice, &cmd->sid, VBOXDXALLOCATIONTYPE_SURFACE,
                              hAllocation, 0, true);
 
