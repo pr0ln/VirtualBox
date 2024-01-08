@@ -4,7 +4,7 @@
 #
 
 #
-# Copyright (C) 2022 Oracle and/or its affiliates.
+# Copyright (C) 2022-2023 Oracle and/or its affiliates.
 #
 # This file is part of VirtualBox base platform packages, as
 # available from https://www.virtualbox.org.
@@ -29,7 +29,7 @@ SUB_DEPTH = ../../../../..
 include $(KBUILD_PATH)/subheader.kmk
 
 LIBRARIES += providers_der
-providers_der_TEMPLATE = SUBLIBCRYPTO
+providers_der_TEMPLATE = SubLibCrypto
 providers_der_DEFS = OPENSSL_NO_DEPRECATED
 providers_der_SOURCES = \
 	der_dsa_key.c \
@@ -70,7 +70,7 @@ OSSL_PROVIDERS_DER_SRC_TEMPLATES := \
 #  instead of getting it expanded and executed at once...
 #
 recreate-providers-der-sources: $(VBOX_PATH_OPENSSL)/util/dofile.pl \
-	$(OSSL_PROVIDERS_DER_SRC_TEMPLATES)
+		$(OSSL_PROVIDERS_DER_SRC_TEMPLATES)
 	$(foreach src, $(OSSL_PROVIDERS_DER_SRC_TEMPLATES), \
 	    perl \
 	     -I$(VBOX_PATH_OPENSSL) \

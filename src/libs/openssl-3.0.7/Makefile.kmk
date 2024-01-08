@@ -4,7 +4,7 @@
 #
 
 #
-# Copyright (C) 2006-2022 Oracle and/or its affiliates.
+# Copyright (C) 2006-2023 Oracle and/or its affiliates.
 #
 # This file is part of VirtualBox base platform packages, as
 # available from https://www.virtualbox.org.
@@ -77,8 +77,8 @@ OSSL_HDR_TEMPLATES := \
 #  instead of getting it expanded and executed at once...
 #
 recreate-headers: $(PATH_SUB_CURRENT)/util/dofile.pl \
-	$(OSSL_HDR_TEMPLATES) \
-	recreate-providers-headers
+		$(OSSL_HDR_TEMPLATES) \
+		recreate-providers-headers
 	$(foreach header, $(OSSL_HDR_TEMPLATES), \
 	    perl -I$(PATH_SUB_CURRENT) \
 	     -Mconfigdata $(PATH_SUB_CURRENT)/util/dofile.pl -oMakefile \

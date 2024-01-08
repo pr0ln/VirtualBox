@@ -4,7 +4,7 @@
 #
 
 #
-# Copyright (C) 2006-2022 Oracle and/or its affiliates.
+# Copyright (C) 2006-2023 Oracle and/or its affiliates.
 #
 # This file is part of VirtualBox base platform packages, as
 # available from https://www.virtualbox.org.
@@ -29,7 +29,7 @@ SUB_DEPTH = ../../../../..
 include $(KBUILD_PATH)/subheader.kmk
 
 LIBRARIES += crypto_encode_decode
-crypto_encode_decode_TEMPLATE = SUBLIBCRYPTO
+crypto_encode_decode_TEMPLATE = SubLibCrypto
 crypto_encode_decode_DEFS = OPENSSL_NO_DEPRECATED
 crypto_encode_decode_SOURCES = \
 	decoder_err.c \

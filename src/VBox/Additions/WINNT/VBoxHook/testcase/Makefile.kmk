@@ -4,7 +4,7 @@
 #
 
 #
-# Copyright (C) 2006-2022 Oracle and/or its affiliates.
+# Copyright (C) 2006-2023 Oracle and/or its affiliates.
 #
 # This file is part of VirtualBox base platform packages, as
 # available from https://www.virtualbox.org.
@@ -30,18 +30,18 @@ include $(KBUILD_PATH)/subheader.kmk
 
 ifdef VBOX_WITH_TESTCASES
 
-#
-# Structure size testcase.
-#
-PROGRAMS += tstHook
+ #
+ # Structure size testcase.
+ #
+ PROGRAMS += tstHook
 
-tstHook_TEMPLATE = VBoxGuestR3Exe
-tstHook_DEFS     = VBOX_WITH_HGCM
-tstHook_SOURCES  = tstHook.cpp
-tstHook_INCS     = ../../include
-tstHook_LIBS     = $(PATH_STAGE_LIB)/VBoxHook.lib
-tstHook_VBOX_IMPORT_CHECKER.win.x86   = $(NO_SUCH_VARIABLE)
-tstHook_VBOX_IMPORT_CHECKER.win.amd64 = $(NO_SUCH_VARIABLE)
+ tstHook_TEMPLATE = VBoxGuestR3Exe
+ tstHook_DEFS    = VBOX_WITH_HGCM
+ tstHook_SOURCES = tstHook.cpp
+ tstHook_INCS    = ../../include
+ tstHook_LIBS    = $(PATH_STAGE_LIB)/VBoxHook.lib
+ tstHook_VBOX_IMPORT_CHECKER.win.x86  = $(NO_SUCH_VARIABLE)
+ tstHook_VBOX_IMPORT_CHECKER.win.amd64 = $(NO_SUCH_VARIABLE)
 
 endif # VBOX_WITH_TESTCASES
 

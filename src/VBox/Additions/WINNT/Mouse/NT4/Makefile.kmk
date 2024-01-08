@@ -4,7 +4,7 @@
 #
 
 #
-# Copyright (C) 2006-2022 Oracle and/or its affiliates.
+# Copyright (C) 2006-2023 Oracle and/or its affiliates.
 #
 # This file is part of VirtualBox base platform packages, as
 # available from https://www.virtualbox.org.
@@ -29,7 +29,7 @@ SUB_DEPTH = ../../../../../..
 include $(KBUILD_PATH)/subheader.kmk
 
 SYSMODS.x86 += VBoxMouseNT
-VBoxMouseNT_TEMPLATE    = VBOXGUESTR0
+VBoxMouseNT_TEMPLATE    = VBoxGuestR0Drv
 VBoxMouseNT_DEFS        = LOG_TO_BACKDOOR RT_WITHOUT_NOCRT_WRAPPERS TARGET_NT3
 VBoxMouseNT_SDKS        = ReorderCompilerIncs $(VBOX_WINDDK_GST_NT4)
 VBoxMouseNT_INCS        = \
@@ -38,10 +38,10 @@ VBoxMouseNT_LDFLAGS     = -Entry:DriverEntry@8
 VBoxMouseNT_SOURCES     = \
 	VBoxPS2NT.cpp \
 	VBoxPS2NT.rc \
-       ../../../../Runtime/r0drv/nt/nt3fakes-r0drv-nt.cpp \
-       ../../../../Runtime/r0drv/nt/nt3fakesA-r0drv-nt.asm \
-       ../../../../Runtime/common/string/strcmp.asm \
-       ../../../../Runtime/common/string/strchr.asm
+	../../../../Runtime/r0drv/nt/nt3fakes-r0drv-nt.cpp \
+	../../../../Runtime/r0drv/nt/nt3fakesA-r0drv-nt.asm \
+	../../../../Runtime/common/string/strcmp.asm \
+	../../../../Runtime/common/string/strchr.asm
 VBoxMouseNT_LIBS        = \
 	$(VBOX_LIB_IPRT_GUEST_R0_NT4) \
 	$(VBOX_LIB_VBGL_R0) \
@@ -51,7 +51,7 @@ VBoxMouseNT_LIBS        = \
 	$(PATH_SDK_$(VBOX_WINDDK_GST_NT4)_LIB)/hal.lib
 ifneq ($(VBOX_VCC_CC_GUARD_CF),)
  VBoxMouseNT_LIBS.x86 += \
-  	$(PATH_SDK_$(VBOX_WINDDK_GST)_LIB)/BufferOverflowK.lib
+ 	$(PATH_SDK_$(VBOX_WINDDK_GST)_LIB)/BufferOverflowK.lib
 endif
 VBoxMouseNT_CLEAN       = \
 	$(VBoxMouseNT_0_OUTDIR)/VBoxMouseNT.pdb

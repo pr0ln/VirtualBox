@@ -4,7 +4,7 @@
 #
 
 #
-# Copyright (C) 2022 Oracle and/or its affiliates.
+# Copyright (C) 2022-2023 Oracle and/or its affiliates.
 #
 # This file is part of VirtualBox base platform packages, as
 # available from https://www.virtualbox.org.
@@ -29,7 +29,7 @@ SUB_DEPTH = ../../../../..
 include $(KBUILD_PATH)/subheader.kmk
 
 LIBRARIES += providers_kem
-providers_kem_TEMPLATE = SUBLIBCRYPTO
+providers_kem_TEMPLATE = SubLibCrypto
 providers_kem_DEFS = OPENSSL_NO_DEPRECATED
 providers_kem_SOURCES = \
 	rsa_kem.c

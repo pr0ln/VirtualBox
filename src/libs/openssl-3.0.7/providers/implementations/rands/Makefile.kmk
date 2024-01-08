@@ -4,7 +4,7 @@
 #
 
 #
-# Copyright (C) 2022 Oracle and/or its affiliates.
+# Copyright (C) 2022-2023 Oracle and/or its affiliates.
 #
 # This file is part of VirtualBox base platform packages, as
 # available from https://www.virtualbox.org.
@@ -29,7 +29,7 @@ SUB_DEPTH = ../../../../..
 include $(KBUILD_PATH)/subheader.kmk
 
 LIBRARIES += providers_rands
-providers_rands_TEMPLATE = SUBLIBCRYPTO
+providers_rands_TEMPLATE = SubLibCrypto
 providers_rands_DEFS = OPENSSL_NO_DEPRECATED
 providers_rands_SOURCES = \
 	crngt.c \
@@ -41,11 +41,11 @@ providers_rands_SOURCES = \
 	test_rng.c \
 	seeding/rand_cpu_x86.c
 ifn1of ($(KBUILD_TARGET), win)
-providers_rands_SOURCES += \
-	seeding/rand_unix.c
+ providers_rands_SOURCES += \
+ 	seeding/rand_unix.c
 else
-providers_rands_SOURCES += \
-	seeding/rand_win.c
+ providers_rands_SOURCES += \
+ 	seeding/rand_win.c
 endif
 $(evalcall VBOX_OPENSSL_X86,providers_rands)
 

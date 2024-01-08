@@ -4,7 +4,7 @@
 ;
 
 ;
-; Copyright (C) 2006-2022 Oracle and/or its affiliates.
+; Copyright (C) 2006-2023 Oracle and/or its affiliates.
 ;
 ; This file is part of VirtualBox base platform packages, as
 ; available from https://www.virtualbox.org.
@@ -59,6 +59,14 @@ Function Common_CopyFiles
   FILE "$%PATH_OUT%\bin\additions\VBoxDrvInst.exe"
 
   FILE "$%PATH_OUT%\bin\additions\VBoxVideo.inf"
+!if $%KBUILD_TARGET_ARCH% == "x86"
+  ${If} $g_strEarlyNTDrvInfix != ""
+    FILE "$%PATH_OUT%\bin\additions\VBoxVideoEarlyNT.inf"
+  !ifdef VBOX_SIGN_ADDITIONS
+    FILE "$%PATH_OUT%\bin\additions\VBoxVideoEarlyNT.cat"
+  !endif
+  ${EndIf}
+!endif
 !ifdef VBOX_SIGN_ADDITIONS
   ${If} $g_strWinVersion == "10"
     FILE "$%PATH_OUT%\bin\additions\VBoxVideo.cat"
@@ -91,6 +99,14 @@ Function ExtractFiles
   SetOutPath "$0\VBoxVideo"
   FILE "$%PATH_OUT%\bin\additions\VBoxVideo.sys"
   FILE "$%PATH_OUT%\bin\additions\VBoxVideo.inf"
+!if $%KBUILD_TARGET_ARCH% == "x86"
+  ${If} $g_strEarlyNTDrvInfix != ""
+    FILE "$%PATH_OUT%\bin\additions\VBoxVideoEarlyNT.inf"
+  !ifdef VBOX_SIGN_ADDITIONS
+    FILE "$%PATH_OUT%\bin\additions\VBoxVideoEarlyNT.cat"
+  !endif
+  ${EndIf}
+!endif
 !ifdef VBOX_SIGN_ADDITIONS
   ${If} $g_strWinVersion == "10"
     FILE "$%PATH_OUT%\bin\additions\VBoxVideo.cat"
@@ -158,6 +174,14 @@ Function ExtractFiles
   SetOutPath "$0\VBoxGuest"
   FILE "$%PATH_OUT%\bin\additions\VBoxGuest.sys"
   FILE "$%PATH_OUT%\bin\additions\VBoxGuest.inf"
+!if $%KBUILD_TARGET_ARCH% == "x86"
+  ${If} $g_strEarlyNTDrvInfix != ""
+    FILE "$%PATH_OUT%\bin\additions\VBoxGuestEarlyNT.inf"
+  !ifdef VBOX_SIGN_ADDITIONS
+    FILE "$%PATH_OUT%\bin\additions\VBoxGuestEarlyNT.cat"
+  !endif
+  ${EndIf}
+!endif
 !ifdef VBOX_SIGN_ADDITIONS
   ${If} $g_strWinVersion == "10"
     FILE "$%PATH_OUT%\bin\additions\VBoxGuest.cat"

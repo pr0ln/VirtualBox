@@ -4,7 +4,7 @@
 #
 
 #
-# Copyright (C) 2006-2022 Oracle and/or its affiliates.
+# Copyright (C) 2006-2023 Oracle and/or its affiliates.
 #
 # This file is part of VirtualBox base platform packages, as
 # available from https://www.virtualbox.org.
@@ -29,7 +29,7 @@ SUB_DEPTH = ../../../../..
 include $(KBUILD_PATH)/subheader.kmk
 
 LIBRARIES += crypto_sha
-crypto_sha_TEMPLATE = SUBLIBCRYPTO
+crypto_sha_TEMPLATE = SubLibCrypto
 crypto_sha_DEFS = OPENSSL_NO_DEPRECATED
 crypto_sha_SOURCES = \
 	sha1_one.c \
@@ -39,33 +39,33 @@ crypto_sha_SOURCES = \
 	sha512.c
 ifdef VBOX_WITH_CRYPTO_ASM
  crypto_sha_SOURCES.x86 += \
-	keccak1600.c \
-	$(VBOX_PATH_CRYPTO_GENASM)/sha1-586.S \
-	$(VBOX_PATH_CRYPTO_GENASM)/sha256-586.S \
-	$(VBOX_PATH_CRYPTO_GENASM)/sha512-586.S
+ 	keccak1600.c \
+ 	$(VBOX_PATH_CRYPTO_GENASM)/sha1-586.S \
+ 	$(VBOX_PATH_CRYPTO_GENASM)/sha256-586.S \
+ 	$(VBOX_PATH_CRYPTO_GENASM)/sha512-586.S
  crypto_sha_SOURCES.amd64 += \
-	$(VBOX_PATH_CRYPTO_GENASM)/keccak1600-x86_64.S \
-	$(VBOX_PATH_CRYPTO_GENASM)/sha1-x86_64.S \
-	$(VBOX_PATH_CRYPTO_GENASM)/sha1-mb-x86_64.S \
-	$(VBOX_PATH_CRYPTO_GENASM)/sha256-x86_64.S \
-	$(VBOX_PATH_CRYPTO_GENASM)/sha256-mb-x86_64.S \
-	$(VBOX_PATH_CRYPTO_GENASM)/sha512-x86_64.S
+ 	$(VBOX_PATH_CRYPTO_GENASM)/keccak1600-x86_64.S \
+ 	$(VBOX_PATH_CRYPTO_GENASM)/sha1-x86_64.S \
+ 	$(VBOX_PATH_CRYPTO_GENASM)/sha1-mb-x86_64.S \
+ 	$(VBOX_PATH_CRYPTO_GENASM)/sha256-x86_64.S \
+ 	$(VBOX_PATH_CRYPTO_GENASM)/sha256-mb-x86_64.S \
+ 	$(VBOX_PATH_CRYPTO_GENASM)/sha512-x86_64.S
 else
  crypto_sha_SOURCES += \
-	keccak1600.c
+ 	keccak1600.c
 endif
 $(evalcall VBOX_OPENSSL_X86,crypto_sha)
 
 
 recreate-sha-asm: $(VBOX_PATH_CRYPTO)/perlasm/x86asm.pl \
-	$(VBOX_PATH_CRYPTO_SHA)/asm/sha1-586.pl \
-	$(VBOX_PATH_CRYPTO_SHA)/asm/sha256-586.pl \
-	$(VBOX_PATH_CRYPTO_SHA)/asm/sha512-586.pl \
-	$(VBOX_PATH_CRYPTO_SHA)/asm/keccak1600-x86_64.pl \
-	$(VBOX_PATH_CRYPTO_SHA)/asm/sha1-x86_64.pl \
-	$(VBOX_PATH_CRYPTO_SHA)/asm/sha1-mb-x86_64.pl \
-	$(VBOX_PATH_CRYPTO_SHA)/asm/sha512-x86_64.pl \
-	$(VBOX_PATH_CRYPTO_SHA)/asm/sha256-mb-x86_64.pl
+		$(VBOX_PATH_CRYPTO_SHA)/asm/sha1-586.pl \
+		$(VBOX_PATH_CRYPTO_SHA)/asm/sha256-586.pl \
+		$(VBOX_PATH_CRYPTO_SHA)/asm/sha512-586.pl \
+		$(VBOX_PATH_CRYPTO_SHA)/asm/keccak1600-x86_64.pl \
+		$(VBOX_PATH_CRYPTO_SHA)/asm/sha1-x86_64.pl \
+		$(VBOX_PATH_CRYPTO_SHA)/asm/sha1-mb-x86_64.pl \
+		$(VBOX_PATH_CRYPTO_SHA)/asm/sha512-x86_64.pl \
+		$(VBOX_PATH_CRYPTO_SHA)/asm/sha256-mb-x86_64.pl
 	perl $(VBOX_PATH_CRYPTO_SHA)/asm/sha1-586.pl elf -fPIC $(VBOX_PATH_CRYPTO)/genasm-elf/sha1-586.S
 	perl $(VBOX_PATH_CRYPTO_SHA)/asm/sha256-586.pl elf -fPIC $(VBOX_PATH_CRYPTO)/genasm-elf/sha256-586.S
 	perl $(VBOX_PATH_CRYPTO_SHA)/asm/sha512-586.pl elf -fPIC $(VBOX_PATH_CRYPTO)/genasm-elf/sha512-586.S

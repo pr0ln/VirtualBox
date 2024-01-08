@@ -4,7 +4,7 @@
 #
 
 #
-# Copyright (C) 2022 Oracle and/or its affiliates.
+# Copyright (C) 2022-2023 Oracle and/or its affiliates.
 #
 # This file is part of VirtualBox base platform packages, as
 # available from https://www.virtualbox.org.
@@ -31,7 +31,7 @@ include $(KBUILD_PATH)/subheader.kmk
 include $(PATH_SUB_CURRENT)/der/Makefile.kmk
 
 LIBRARIES += providers_common
-providers_common_TEMPLATE = SUBLIBCRYPTO
+providers_common_TEMPLATE = SubLibCrypto
 providers_common_DEFS = OPENSSL_NO_DEPRECATED
 providers_common_SOURCES = \
 	bio_prov.c \

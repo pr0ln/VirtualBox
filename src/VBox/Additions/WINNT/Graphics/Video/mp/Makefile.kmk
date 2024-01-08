@@ -4,7 +4,7 @@
 #
 
 #
-# Copyright (C) 2011-2022 Oracle and/or its affiliates.
+# Copyright (C) 2011-2023 Oracle and/or its affiliates.
 #
 # This file is part of VirtualBox base platform packages, as
 # available from https://www.virtualbox.org.
@@ -34,7 +34,7 @@ include $(KBUILD_PATH)/subheader.kmk
 # Note. This has to run on NT4! (*_NT4 => *_W2K3 when targeting 64-bit.)
 #
 SYSMODS += VBoxVideo
-VBoxVideo_TEMPLATE      = VBOXGUESTR0
+VBoxVideo_TEMPLATE      = VBoxGuestR0Drv
 VBoxVideo_SDKS          = ReorderCompilerIncs $(VBOX_WINDDK_GST_NT4)
 VBoxVideo_DEFS          = VBOX_XPDM_MINIPORT VBOX_WITH_8BPP_MODES VBOX_USING_$(VBOX_WINDDK_GST_NT4)
 VBoxVideo_DEFS         += LOG_TO_BACKDOOR #LOG_ENABLED
@@ -43,10 +43,10 @@ ifdef VBOX_WITH_VIDEOHWACCEL
  VBoxVideo_DEFS        += VBOX_WITH_VIDEOHWACCEL
 endif
 VBoxVideo_INCS          = \
-        ../../../include \
-        .. \
-        . \
-        $(VBOX_GRAPHICS_INCS)
+	../../../include \
+	.. \
+	. \
+	$(VBOX_GRAPHICS_INCS)
 VBoxVideo_LDFLAGS.x86   = /Entry:DriverEntry@8
 VBoxVideo_LDFLAGS.amd64 = /Entry:DriverEntry
 VBoxVideo_SOURCES       = \
@@ -75,7 +75,7 @@ VBoxVideo_LIBS          = \
 ifeq ($(KBUILD_TARGET_ARCH),x86)
  VBoxVideo_LIBS         += \
  	$(PATH_SDK_$(VBOX_WINDDK_GST_NT4)_LIB)/exsup.lib \
-	$(PATH_SDK_$(VBOX_WINDDK_GST)_LIB)/BufferOverflowK.lib # Needed for ___security_cookie.
+ 	$(PATH_SDK_$(VBOX_WINDDK_GST)_LIB)/BufferOverflowK.lib # Needed for ___security_cookie.
 endif
 VBoxVideo_USES.win = vboximportchecker
 VBoxVideo_VBOX_IMPORT_CHECKER.win.x86 = nt4/r0
@@ -86,7 +86,7 @@ ifdef VBOX_WITH_WDDM
  # VBoxWddm - Windows Guest Additions WDDM Miniport Video Driver
  #
  SYSMODS += VBoxWddm
- VBoxWddm_TEMPLATE         = VBOXGUESTR0
+ VBoxWddm_TEMPLATE         = VBoxGuestR0Drv
  VBoxWddm_SDKS             = $(VBOX_WINDDK_GST_W8)
  VBoxWddm_DEFS            += VBOX_WDDM_MINIPORT VBOX_WITH_WDDM VBOX_WITH_HGCM
  # WIN9X_COMPAT_SPINLOCK inlines KeInitializeSpinLock in W8 DDK (Windows 7 or older ntoskrnl does not export it).
@@ -116,9 +116,9 @@ ifdef VBOX_WITH_WDDM
  VBoxWddm_SOURCES          = \
  	wddm/VBoxMPWddm.cpp \
  	wddm/VBoxMPLegacy.cpp \
-	wddm/VBoxMPVidPn.cpp \
-	wddm/VBoxMPVdma.cpp \
-	wddm/VBoxMPShgsmi.cpp \
+ 	wddm/VBoxMPVidPn.cpp \
+ 	wddm/VBoxMPVdma.cpp \
+ 	wddm/VBoxMPShgsmi.cpp \
  	wddm/VBoxMPCm.cpp \
  	wddm/VBoxMPSa.cpp \
  	wddm/VBoxMPMisc.cpp \
@@ -136,11 +136,11 @@ ifdef VBOX_WITH_WDDM
 
  ifdef VBOXWDDM_WITH_VBVA
   VBoxWddm_SOURCES        += \
-    wddm/VBoxMPVbva.cpp
+  	wddm/VBoxMPVbva.cpp
  endif
  ifdef VBOX_WITH_VIDEOHWACCEL
   VBoxWddm_SOURCES        += \
-    wddm/VBoxMPVhwa.cpp
+  	wddm/VBoxMPVhwa.cpp
  endif
 
  VBoxWddm_LIBS             = \
@@ -160,8 +160,8 @@ ifdef VBOX_WITH_WDDM
   VBoxWddm_DEFS           += __STDC_VERSION__=0    # for mesa include/c99_compat.h
   VBoxWddm_DEFS           += WIN9X_COMPAT_SPINLOCK # to avoid multiple KeInitializeSpinLock on amd64
   VBoxWddm_INCS           += \
-	$(PATH_ROOT)/src/VBox/Additions/3D/win/include \
-	$(PATH_ROOT)/src/VBox/Devices/Graphics/vmsvga_include
+  	$(PATH_ROOT)/src/VBox/Additions/3D/win/include \
+  	$(PATH_ROOT)/src/VBox/Devices/Graphics/vmsvga_include
   VBoxWddm_SOURCES        += \
   	wddm/gallium/Svga.cpp \
   	wddm/gallium/SvgaCmd.cpp \

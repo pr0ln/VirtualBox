@@ -4,7 +4,7 @@
 #
 
 #
-# Copyright (C) 2019-2022 Oracle and/or its affiliates.
+# Copyright (C) 2019-2023 Oracle and/or its affiliates.
 #
 # This file is part of VirtualBox base platform packages, as
 # available from https://www.virtualbox.org.
@@ -29,7 +29,7 @@ SUB_DEPTH = ../../../../..
 include $(KBUILD_PATH)/subheader.kmk
 
 LIBRARIES += crypto_md2
-crypto_md2_TEMPLATE = SUBLIBCRYPTO
+crypto_md2_TEMPLATE = SubLibCrypto
 crypto_md2_DEFS = OPENSSL_NO_DEPRECATED
 crypto_md2_SOURCES = \
 	md2_dgst.c \

@@ -4,7 +4,7 @@
 ;
 
 ;
-; Copyright (C) 2006-2022 Oracle and/or its affiliates.
+; Copyright (C) 2006-2023 Oracle and/or its affiliates.
 ;
 ; This file is part of VirtualBox base platform packages, as
 ; available from https://www.virtualbox.org.
@@ -45,11 +45,9 @@ DefaultDestDir      = 12 ; drivers
 VBoxMRXNP_CopyFiles = 11 ; system32
 
 [Manufacturer]
-;x86   %ORACLE%=VBoxSF
-;amd64 %ORACLE%=VBoxSF, NTamd64
+%ORACLE%=VBoxSF@COMMA-NT-ARCH@
 
-;x86   [VBoxSF]
-;amd64 [VBoxSF.NTamd64]
+[VBoxSF@DOT-NT-ARCH@]
 %VBoxSF.DeviceDesc%=VBoxSF_Install,PCI\VEN_80ee&DEV_cafe
 
 [VBoxSF_Install]

@@ -37,10 +37,6 @@
 #ifndef LZF_H
 #define LZF_H
 
-#ifdef __cplusplus /* vbox */
-extern "C" {       /* vbox */
-#endif             /* vbox */
-
 /***********************************************************************
 **
 **	lzf -- an extremely fast/free compression/decompression-method
@@ -100,8 +96,5 @@ unsigned int
 lzf_decompress (const void *const in_data,  unsigned int in_len,
                 void             *out_data, unsigned int out_len);
 
-#ifdef __cplusplus /* vbox */
-}                  /* vbox */
-#endif             /* vbox */
 #endif
 
