@@ -158,10 +158,10 @@ typedef struct VBOXDXQUERY
     RTLISTNODE                  nodeQuery;                  /* VBOXDX_DEVICE::listQueries */
     D3D10DDI_HRTQUERY           hRTQuery;
     D3D10DDI_QUERY              Query;
-    UINT                        MiscFlags;
     struct
     {
         SVGA3dQueryType         queryType;
+        SVGA3dDXQueryFlags      flags;
     } svga;
     VBOXDXQUERYSTATE            enmQueryState;
     uint32_t                    uQueryId;
@@ -476,7 +476,7 @@ void vboxDXCreateStreamOutput(PVBOXDX_DEVICE pDevice, PVBOXDXSHADER pShader,
                               const UINT  *BufferStridesInBytes, UINT NumStrides,
                               UINT RasterizedStream);
 void vboxDXDestroyShader(PVBOXDX_DEVICE pDevice, PVBOXDXSHADER pShader);
-void vboxDXCreateQuery(PVBOXDX_DEVICE pDevice, PVBOXDXQUERY pQuery);
+void vboxDXCreateQuery(PVBOXDX_DEVICE pDevice, PVBOXDXQUERY pQuery, D3D10DDI_QUERY Query, UINT MiscFlags);
 void vboxDXDestroyQuery(PVBOXDX_DEVICE pDevice, PVBOXDXQUERY pQuery);
 void vboxDXQueryBegin(PVBOXDX_DEVICE pDevice, PVBOXDXQUERY pQuery);
 void vboxDXQueryEnd(PVBOXDX_DEVICE pDevice, PVBOXDXQUERY pQuery);
@@ -533,8 +533,7 @@ HRESULT vboxDXFlush(PVBOXDX_DEVICE pDevice, bool fForce);
 
 DECLINLINE(void) vboxDXDeviceSetError(PVBOXDX_DEVICE pDevice, HRESULT hr)
 {
-    Assert(SUCCEEDED(hr) || hr == DXGI_DDI_ERR_WASSTILLDRAWING);
-    /* This callback is also used for setting S_OK, etc results, so always call it. */
+    Assert(hr == DXGI_DDI_ERR_WASSTILLDRAWING);
     pDevice->pUMCallbacks->pfnSetErrorCb(pDevice->hRTCoreLayer, hr);
 }
 
